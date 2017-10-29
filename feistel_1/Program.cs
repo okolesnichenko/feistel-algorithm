@@ -32,6 +32,18 @@ namespace feistel_1
                     }
                 }
 
+                //проверка Данила
+                List<ulong> list = new List<ulong>(); // Массив для поиска колизий (одинаковых хешей у разных входных данных)
+                for (ulong i = 0; i < 12000; i++)
+                {
+                    list.Add(Feistel.Hash(BitConverter.GetBytes(i), n, key));
+                }
+                var result = list
+            .Select(number => new { Hash = number, Count = list.Count(l => l == number) })
+            .Where(obj => obj.Count > 1)
+            .Distinct()
+            .ToDictionary(obj => obj, obj => obj.Count);
+
                 byte[] encodeMsg = Feistel.Encoder(myMsg, n, key);
                 string strEncodeMsg = encoding.GetString(encodeMsg);
                 Console.WriteLine("Encripted: {0}", strEncodeMsg);
