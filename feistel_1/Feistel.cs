@@ -12,7 +12,7 @@ namespace feistel_1
         {
             ushort[] keys = new ushort[n];
             byte[] encodMsg = new byte[myMsg.Length];
-            
+
             //генерация ключей
             for (int i = 0; i < keys.Length; i++)
             {
@@ -39,7 +39,7 @@ namespace feistel_1
                 x1 = (ushort)((x1 << 8) | myMsg[i + 3]);
 
                 x2 = (ushort)(x2 | myMsg[i + 4]);
-                x2 = (ushort)((x2 << 8) | myMsg[i + 5]); 
+                x2 = (ushort)((x2 << 8) | myMsg[i + 5]);
 
                 x3 = (ushort)(x3 | myMsg[i + 6]);
                 x3 = (ushort)((x3 << 8) | myMsg[i + 7]);
@@ -66,19 +66,21 @@ namespace feistel_1
                 encodMsg[i + 5] = (byte)x2;
                 encodMsg[i + 6] = (byte)(x3 >> 8);
                 encodMsg[i + 7] = (byte)x3;
+
+
             }
             //Console.WriteLine("===========");
             return encodMsg;
         }
 
         static public byte[] Decoder(byte[] encodMsg, int n, ulong key)
-        { 
+        {
             ushort[] keys = new ushort[n];
             byte[] decodMsg = new byte[encodMsg.Length];
-            
+
 
             for (int i = 0; i < keys.Length; i++)
-            { 
+            {
                 keys[i] = KeyGenerator(key, i);
             }
 
@@ -88,7 +90,7 @@ namespace feistel_1
             ushort c3;
             ushort x0, x1, x2, x3;
 
-            for (int i = 0; i < encodMsg.Length; i+=8)
+            for (int i = 0; i < encodMsg.Length; i += 8)
             {
                 c0 = 0;
                 c1 = 0;
@@ -107,13 +109,13 @@ namespace feistel_1
                 c3 = (ushort)(c3 | encodMsg[i + 6]);
                 c3 = (ushort)((c3 << 8) | encodMsg[i + 7]);
 
-                for(int j = 0; j < n; j++)
+                for (int j = 0; j < n; j++)
                 {
                     //Console.Write("{0}|{1}|{2}|{3} || ", Convert.ToString(x0, 8), Convert.ToString(x1, 8), Convert.ToString(x2, 8), Convert.ToString(x3, 8));
                     x0 = c1;
                     x1 = (ushort)(F((ushort)(c0 ^ c2)) ^ c1);
                     x2 = c3;
-                    x3 = (ushort)(c2^keys[n-1-j]);
+                    x3 = (ushort)(c2 ^ keys[n - 1 - j]);
                     //Console.Write("{0}|", keys[n-j-1]);
                     c0 = x0;
                     c1 = x1;
@@ -130,14 +132,82 @@ namespace feistel_1
                 decodMsg[i + 6] = (byte)(c3 >> 8);
                 decodMsg[i + 7] = (byte)c3;
 
-                
-            } 
+
+            }
             //Console.WriteLine("===========");
             return decodMsg;
         }
 
+        static public ulong Hash(byte[] myMsg, int n, ulong key)
+        {
+            ushort[] keys = new ushort[n];
+            byte[] encodMsg = new byte[myMsg.Length];
+            ulong afterEnc = 0;
+            ulong beforeEnc = 0;
+            //генерация ключей
+            for (int i = 0; i < keys.Length; i++)
+            {
+                keys[i] = KeyGenerator(key, i);
+            }
+            //объяление блоков до и после выхода из алг
+            ushort x0 = 0;
+            ushort x1 = 0;
+            ushort x2 = 0;
+            ushort x3 = 0;
+            ushort c0, c1, c2, c3;
+
+            for (int i = 0; i < myMsg.Length; i += 8)
+            {
+                x0 = 0;
+                x1 = 0;
+                x2 = 0;
+                x3 = 0;
+                //заполнение блоков x 
+                x0 = (ushort)(x0 | myMsg[i]);
+                x0 = (ushort)((x0 << 8) | myMsg[i + 1]);
+
+                x1 = (ushort)(x1 | myMsg[i + 2]);
+                x1 = (ushort)((x1 << 8) | myMsg[i + 3]);
+
+                x2 = (ushort)(x2 | myMsg[i + 4]);
+                x2 = (ushort)((x2 << 8) | myMsg[i + 5]);
+
+                x3 = (ushort)(x3 | myMsg[i + 6]);
+                x3 = (ushort)((x3 << 8) | myMsg[i + 7]);
+
+                beforeEnc = x0;
+                beforeEnc = (afterEnc << 16) | x1;
+                beforeEnc = (afterEnc << 16) | x2;
+                beforeEnc = (afterEnc << 16) | x3;
+
+                //алгоритм шифрования
+                for (int j = 0; j < n; j++)
+                {
+                    //Console.Write("{0}|{1}|{2}|{3} || ", Convert.ToString(x0, 8), Convert.ToString(x1, 8), Convert.ToString(x2, 8), Convert.ToString(x3, 8));
+                    c0 = (ushort)(F((ushort)(x0 ^ x1)) ^ (x3 ^ keys[j]));
+                    c1 = x0;
+                    c2 = (ushort)(x3 ^ keys[j]);
+                    c3 = x2;
+                    //Console.Write("{0}|", keys[j]);
+                    x0 = c0;
+                    x1 = c1;
+                    x2 = c2;
+                    x3 = c3;
+                }
+                for (int j = 0; j < keys.Length; j++)
+                {
+                    afterEnc = x0;
+                    afterEnc = (afterEnc << 16) | x1;
+                    afterEnc = (afterEnc << 16) | x2;
+                    afterEnc = (afterEnc << 16) | x3;
+                    keys[j] = KeyGenerator(afterEnc^beforeEnc, j);
+                }
+            }
+            return afterEnc^beforeEnc;
+        }
+
         static public ushort F(ushort num)
-        {            
+        {
             return (ushort)(~num);
         }
 

@@ -40,6 +40,9 @@ namespace feistel_1
                 string strDecodeMsg = encoding.GetString(decodeMsg);
                 Console.WriteLine("Decripted: {0}", strDecodeMsg);
 
+                ulong hash = Feistel.Hash(myMsg, n, key);
+                Console.WriteLine("Hash: {0}", hash);
+
                //Console.WriteLine("###############################################");
                //Console.WriteLine(Feistel.F(32770));
             }
